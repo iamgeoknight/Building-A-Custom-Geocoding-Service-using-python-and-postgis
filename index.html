@@ -1,15 +1,19 @@
 <html>
     <head>
         <title>GeoCoding</title>
+        <!-- Include OpenLayers library -->
         <script src="dependencies/ol.js"></script>
         <link rel="stylesheet" href="dependencies/ol.css">
         <link rel="stylesheet" href="dependencies/style.css">
     </head>
     <body>
+        <!-- Container for search box -->
         <div id = "search-container" style="position: absolute;z-index: 9999;background: white;padding: 10px;right: 0;">
             
         </div>        
+        <!-- Map container -->
         <div id = "map">
+            <!-- Popup container -->
             <div id = "popup"></div>  
         </div>
     </body>
@@ -49,27 +53,34 @@
         searchResults.style.listStyle = 'none'
         document.getElementById('search-container').appendChild(searchResults);
         searchBox.addEventListener('input', function() {
+            // Clear the previous search results
             searchResults.innerHTML = '';
+            // Get the search term from the input box
             var search_term = searchBox.value;
+            // If the search term is at least one character long, perform the autocomplete search
             if (search_term.length >= 1) {
                 var xhr = new XMLHttpRequest();
+                // Send a GET request to the autocomplete endpoint, passing the search term as a query parameter
                 xhr.open('GET', 'http://127.0.0.1:5000/autocomplete?search_term=' + encodeURIComponent(search_term));
                 xhr.onload = function() {
                     if (xhr.status === 200) {
                         var response = JSON.parse(xhr.responseText);
                         response.results.forEach(function(result) {
+                            // For each search result, create a list item and append it to the search results container
                             var li = document.createElement('li');
                             li.textContent = result.value;
                             li.addEventListener('click', function() {
+                                // When a search result is clicked, populate the search box with the result value, clear the search results container, and center the map on the result location
                                 searchBox.value = result.value;
                                 searchResults.innerHTML = '';
-                                // Do something with the selected result, e.g. center the map
                                 var lonLat = [result.lon, result.lat];  
                                 map.getView().animate({
                                     center: ol.proj.fromLonLat(lonLat),
                                     zoom: 15
                                 });
+                                // Update the popup with the lat and lon of the result location, and position it over the location
                                 overlay.element.innerHTML = 'Lat: ' + result.lat + '<br/> Lon: ' + result.lon;
+
                                 // Set popup position to lat lon
                                 overlay.setPosition(ol.proj.fromLonLat(lonLat));
                             });
