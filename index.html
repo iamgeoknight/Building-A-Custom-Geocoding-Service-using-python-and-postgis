@@ -1,0 +1,104 @@
+<html>
+    <head>
+        <title>GeoCoding</title>
+        <script src="dependencies/ol.js"></script>
+        <link rel="stylesheet" href="dependencies/ol.css">
+        <link rel="stylesheet" href="dependencies/style.css">
+    </head>
+    <body>
+        <div id = "search-container" style="position: absolute;z-index: 9999;background: white;padding: 10px;right: 0;">
+            
+        </div>        
+        <div id = "map">
+            <div id = "popup"></div>  
+        </div>
+    </body>
+    <script>
+        //Define Map
+        var map = new ol.Map({
+            target: 'map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([13.068078763917814, 52.94515204359534]),
+                zoom: 9
+            })
+        });
+
+        // Define overlay popup for dislayong lat lon
+        var element = document.getElementById("popup")
+        var overlay = new ol.Overlay({
+            element: element,
+            offset: [0, -15],
+            positioning: 'bottom-center',
+            className: 'ol-tooltip-measure ol-tooltip .ol-tooltip-static'
+        });
+        overlay.setPosition([0,0]);
+        overlay.element.style.display = 'block';      
+        map.addOverlay(overlay);         
+
+        // Create the search textbox and autocomplete functionality
+        var searchBox = document.createElement('input');
+        searchBox.type = 'text';
+        searchBox.placeholder = 'Search...';
+        document.getElementById('search-container').appendChild(searchBox);
+        var searchResults = document.createElement('ul');
+        searchResults.style.listStyle = 'none'
+        document.getElementById('search-container').appendChild(searchResults);
+        searchBox.addEventListener('input', function() {
+            searchResults.innerHTML = '';
+            var search_term = searchBox.value;
+            if (search_term.length >= 1) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://127.0.0.1:5000/autocomplete?search_term=' + encodeURIComponent(search_term));
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        response.results.forEach(function(result) {
+                            var li = document.createElement('li');
+                            li.textContent = result.value;
+                            li.addEventListener('click', function() {
+                                searchBox.value = result.value;
+                                searchResults.innerHTML = '';
+                                // Do something with the selected result, e.g. center the map
+                                var lonLat = [result.lon, result.lat];  
+                                map.getView().animate({
+                                    center: ol.proj.fromLonLat(lonLat),
+                                    zoom: 15
+                                });
+                                overlay.element.innerHTML = 'Lat: ' + result.lat + '<br/> Lon: ' + result.lon;
+                                // Set popup position to lat lon
+                                overlay.setPosition(ol.proj.fromLonLat(lonLat));
+                            });
+                            searchResults.appendChild(li);
+                        });
+                    }
+                };
+                xhr.send();
+            }
+        });
+    </script>
+    <style>
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        li:nth-child(even) {
+        background-color: #f2f2f2; /* even items have a light gray background */
+        }
+
+        li:nth-child(odd) {
+        background-color: #ffffff; /* odd items have a white background */
+        }
+
+        li:hover {
+        background-color: #c2c2c2; /* hover effect */
+        }
+    </style>
+</html>
